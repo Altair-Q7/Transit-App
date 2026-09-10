@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-image:
+      linear-gradient(rgba(27, 42, 56, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 42, 56, 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@layer components {
+  /* Corner-bracket frame, echoing the deck's blueprint slide borders */
+  .blueprint-frame {
+    position: relative;
+    border: 1px solid theme("colors.line");
+  }
+  .blueprint-frame::before,
+  .blueprint-frame::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: theme("colors.rust");
+  }
+  .blueprint-frame::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+  }
+  .blueprint-frame::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+  }
+
+  .telemetry {
+    font-family: ui-monospace, "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+node_modules/
+.next/
+*.db
+.dart_tool/
+build/

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="224" fill="#11243e"/>
+  <circle cx="512" cy="468" r="244" fill="#17375d"/>
+  <path d="M178 708 C308 590 390 622 500 518 S710 350 846 272" fill="none" stroke="#ff7b45" stroke-width="34" stroke-linecap="round"/>
+  <path d="M178 708 C308 590 390 622 500 518 S710 350 846 272" fill="none" stroke="#ffd0bf" stroke-width="7" stroke-dasharray="2 36" stroke-linecap="round"/>
+  <g transform="translate(512 455)">
+    <rect x="-150" y="-96" width="300" height="188" rx="52" fill="#ffffff"/>
+    <rect x="-112" y="-60" width="224" height="94" rx="22" fill="#3977e8"/>
+    <path d="M-80 -38 H80 V12 H-80 Z" fill="#b9d4ff"/>
+    <path d="M-44 -38 V12 M44 -38 V12" stroke="#3977e8" stroke-width="10"/>
+    <circle cx="-83" cy="98" r="28" fill="#11243e" stroke="#ffffff" stroke-width="12"/>
+    <circle cx="83" cy="98" r="28" fill="#11243e" stroke="#ffffff" stroke-width="12"/>
+    <rect x="-188" y="-30" width="38" height="72" rx="19" fill="#ff7b45"/>
+    <rect x="150" y="-30" width="38" height="72" rx="19" fill="#ff7b45"/>
+  </g>
+  <text x="512" y="878" text-anchor="middle" font-family="Arial, sans-serif" font-size="82" font-weight="800" letter-spacing="8" fill="#ffffff">SARATHY</text>
+</svg>
