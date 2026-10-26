@@ -26,6 +26,12 @@ async def enforce_rate_limit(request: Request, rate: str, bucket: str) -> None:
     """
     Call from a route/dependency to enforce `rate` (e.g. "10/minute") for
     the given logical `bucket` name, keyed by client IP.
+
+    Behind a reverse proxy, `request.client.host` is the real client only
+    when uvicorn runs with proxy headers enabled and the proxy peer is
+    trusted, e.g.
+    ``--proxy-headers --forwarded-allow-ips=<docker network>``.
+    Untrusted peers cannot spoof X-Forwarded-For.
     """
     limit, window = _parse_rate(rate)
     client_ip = request.client.host if request.client else "unknown"
