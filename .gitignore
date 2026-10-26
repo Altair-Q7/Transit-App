@@ -1,8 +1,52 @@
+# Python
 __pycache__/
 *.pyc
-.env
+.pytest_cache/
+.venv/
+venv/
+
+# Node / Next.js
 node_modules/
 .next/
-*.db
+out/
+npm-debug.log*
+
+# Flutter / Dart generated
 .dart_tool/
+.flutter-plugins-dependencies
 build/
+**/android/local.properties
+**/android/.gradle/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/linux/flutter/ephemeral/
+**/linux/flutter/generated_plugin_registrant.*
+**/linux/flutter/generated_plugins.cmake
+**/windows/flutter/ephemeral/
+**/windows/flutter/generated_plugin_registrant.*
+**/windows/flutter/generated_plugins.cmake
+**/.idea/
+*.iml
+
+# Local data and secrets
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite3
+
+# Android release signing — never commit
+*.jks
+*.keystore
+**/key.properties
+
+# Local backups / logs
+*.log
+infra/backup/backups/
