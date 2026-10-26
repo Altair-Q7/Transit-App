@@ -101,30 +101,38 @@ class AppRouter {
             ),
 
             // Operator routes (require operator auth)
-            GoRoute(
-              path: '/operator/dashboard',
-              name: 'operatorDashboard',
-              builder: (context, state) => const OperatorDashboardScreen(),
-            ),
-            GoRoute(
-              path: '/operator/fleet',
-              name: 'operatorFleet',
-              builder: (context, state) => const OperatorFleetScreen(),
-            ),
-            GoRoute(
-              path: '/operator/routes',
-              name: 'operatorRoutes',
-              builder: (context, state) => const OperatorRoutesScreen(),
-            ),
-            GoRoute(
-              path: '/operator/trips',
-              name: 'operatorTrips',
-              builder: (context, state) => const OperatorTripsScreen(),
-            ),
-            GoRoute(
-              path: '/operator/incidents',
-              name: 'operatorIncidents',
-              builder: (context, state) => const OperatorIncidentsScreen(),
+            ShellRoute(
+              builder: (context, state, child) => OperatorShell(
+                currentPath: state.uri.path,
+                child: child,
+              ),
+              routes: [
+                GoRoute(
+                  path: '/operator/dashboard',
+                  name: 'operatorDashboard',
+                  builder: (context, state) => const OperatorDashboardScreen(),
+                ),
+                GoRoute(
+                  path: '/operator/fleet',
+                  name: 'operatorFleet',
+                  builder: (context, state) => const OperatorFleetScreen(),
+                ),
+                GoRoute(
+                  path: '/operator/routes',
+                  name: 'operatorRoutes',
+                  builder: (context, state) => const OperatorRoutesScreen(),
+                ),
+                GoRoute(
+                  path: '/operator/trips',
+                  name: 'operatorTrips',
+                  builder: (context, state) => const OperatorTripsScreen(),
+                ),
+                GoRoute(
+                  path: '/operator/incidents',
+                  name: 'operatorIncidents',
+                  builder: (context, state) => const OperatorIncidentsScreen(),
+                ),
+              ],
             ),
           ],
         );

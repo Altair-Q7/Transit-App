@@ -43,59 +43,56 @@ class _OperatorDashboardScreenState extends State<OperatorDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Operator Dashboard')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text('Error: $_error'))
-              : _stats == null
-                  ? const Center(child: Text('No data'))
-                  : Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Overview',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Live snapshot of your fleet — the same numbers behind the MVP success metrics.',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 24),
-                          GridView.count(
-                            shrinkWrap: true,
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 1.5,
-                            children: [
-                              _KpiTile(
-                                label: 'Buses in fleet',
-                                value: _stats!.fleetSize.toString(),
-                              ),
-                              _KpiTile(
-                                label: 'Active trips now',
-                                value: _stats!.activeTrips.toString(),
-                              ),
-                              _KpiTile(
-                                label: 'Stop searches (platform)',
-                                value: _stats!.stopSearchesTotal.toString(),
-                              ),
-                              _KpiTile(
-                                label: 'Availability target',
-                                value: _stats!.availabilityTarget,
-                                hint: 'p95 < ${_stats!.p95TargetMs}ms',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+    return _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+            ? Center(child: Text('Error: $_error'))
+            : _stats == null
+                ? const Center(child: Text('No data'))
+                : Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Overview',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Live snapshot of your fleet — the same numbers behind the MVP success metrics.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 24),
+                        GridView.count(
+                          shrinkWrap: true,
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 1.5,
+                          children: [
+                            _KpiTile(
+                              label: 'Buses in fleet',
+                              value: _stats!.fleetSize.toString(),
+                            ),
+                            _KpiTile(
+                              label: 'Active trips now',
+                              value: _stats!.activeTrips.toString(),
+                            ),
+                            _KpiTile(
+                              label: 'Stop searches (platform)',
+                              value: _stats!.stopSearchesTotal.toString(),
+                            ),
+                            _KpiTile(
+                              label: 'Availability target',
+                              value: _stats!.availabilityTarget,
+                              hint: 'p95 < ${_stats!.p95TargetMs}ms',
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-    );
+                  );
   }
 }
 
