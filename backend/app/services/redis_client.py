@@ -26,7 +26,9 @@ async def set_live_position(trip_id: int, lat: float, lng: float, speed_kmh: flo
     r = get_redis()
     key = LIVE_TRIP_KEY.format(trip_id=trip_id)
     await r.hset(key, mapping={
-        "lat": lat, "lng": lng, "speed_kmh": speed_kmh or 0, "ts": ts,
+        # Keep an omitted speed distinguishable from a real 0 km/h reading;
+        # ETA confidence treats those cases differently.
+        "lat": lat, "lng": lng, "speed_kmh": speed_kmh if speed_kmh is not None else "", "ts": ts,
     })
     await r.expire(key, 60 * 30)  # auto-expire stale trips after 30 min
 

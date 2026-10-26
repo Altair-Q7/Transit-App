@@ -1,7 +1,13 @@
 from logging.config import fileConfig
+from pathlib import Path
+import sys
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+# Make ``alembic`` runnable from the backend directory without requiring
+# callers to set PYTHONPATH manually.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.db.session import Base

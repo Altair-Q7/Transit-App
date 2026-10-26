@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -20,6 +21,22 @@ class Token(BaseModel):
 class CrewLogin(BaseModel):
     phone: str
     password: str
+
+
+class CrewProvision(BaseModel):
+    name: str
+    phone: str
+    password: str
+    role: Literal["driver", "conductor"] = "driver"
+
+
+class CrewOut(BaseModel):
+    id: int
+    name: str
+    phone: str
+    role: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ---------- Fleet ----------
@@ -47,6 +64,7 @@ class StopCreate(BaseModel):
 
 class StopOut(StopCreate):
     id: int
+    route_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -94,16 +112,33 @@ class TripOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OperatorTripOut(TripOut):
+    crew_id: int | None
+    created_at: datetime
+
+
 class EtaResponse(BaseModel):
     trip_id: int
     stop_id: int
     eta_minutes: float
     confidence: str  # "low" | "medium" | "high"
     distance_km: float
-    status: str = "on_time"  # on_time | delayed
+    status: str = "en_route"  # en_route | departed | no_live_data
 
 
 class IncidentReport(BaseModel):
     trip_id: int
     type: str  # breakdown | traffic | emergency
     note: str | None = None
+
+
+class IncidentOut(BaseModel):
+    id: int
+    trip_id: int
+    type: str
+    note: str | None
+    reported_at: datetime
+    admin_verified: bool
+    verified_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)

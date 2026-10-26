@@ -27,6 +27,11 @@ def verify_incident(
     if not incident:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Incident not found")
 
+    trip = db.get(Trip, incident.trip_id)
+    bus = db.get(Bus, trip.bus_id) if trip else None
+    if not bus or bus.operator_id != operator.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Incident is not owned by this operator")
+
     from datetime import datetime, timezone
     incident.admin_verified = True
     incident.verified_at = datetime.now(timezone.utc)

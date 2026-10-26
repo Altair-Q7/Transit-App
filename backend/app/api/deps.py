@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.operator import Operator
+from app.models.operator import Crew, Operator
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/operator/login")
 
@@ -17,14 +17,33 @@ def get_current_operator(
     if not payload or payload.get("role") != "operator":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
 
-    operator = db.get(Operator, int(payload["sub"]))
+    try:
+        operator_id = int(payload["sub"])
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+
+    operator = db.get(Operator, operator_id)
     if not operator:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Operator not found")
     return operator
 
 
-def get_current_crew_claims(token: str = Depends(oauth2_scheme)) -> dict:
+def get_current_crew_claims(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> dict:
     payload = decode_access_token(token)
     if not payload or payload.get("role") != "crew":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+
+    try:
+        crew_id = int(payload["sub"])
+        operator_id = int(payload["operator_id"])
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+
+    crew = db.get(Crew, crew_id)
+    if not crew or crew.operator_id != operator_id:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Crew member not found")
+
     return payload
