@@ -116,7 +116,7 @@ class Route {
   factory Route.fromJson(Map<String, dynamic> json) {
     return Route(
       id: json['id'] as int,
-      operatorId: json['operator_id'] as int,
+      operatorId: json['operator_id'] as int? ?? 0,
       name: json['name'] as String,
       origin: json['origin'] as String,
       destination: json['destination'] as String,
@@ -147,7 +147,7 @@ class Bus {
   factory Bus.fromJson(Map<String, dynamic> json) {
     return Bus(
       id: json['id'] as int,
-      operatorId: json['operator_id'] as int,
+      operatorId: json['operator_id'] as int? ?? 0,
       registrationNumber: json['registration_number'] as String,
       capacity: json['capacity'] as int? ?? 45,
       active: json['active'] as bool? ?? true,

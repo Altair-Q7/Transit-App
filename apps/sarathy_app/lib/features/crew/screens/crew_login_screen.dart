@@ -27,11 +27,12 @@ class _CrewLoginScreenState extends State<CrewLoginScreen> {
         phone: _phoneCtrl.text.trim(),
         password: _passCtrl.text,
       ));
+      final profile = await _api.getCrewMe(tokens.accessToken);
       await AuthService.saveCrewSession(tokens);
       CrewSession.setSession(
         token: tokens.accessToken,
-        crewId: 0, // TODO: decode from JWT or fetch from API
-        operatorId: 0,
+        crewId: profile.id,
+        operatorId: profile.operatorId,
       );
       if (!mounted) return;
       context.goNamed('crewTripControl');

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Route;
 import 'package:geolocator/geolocator.dart';
 import '../../../models.dart';
 import '../../../services.dart';
@@ -27,6 +27,20 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
   // are held here and flushed opportunistically on the next successful ping.
   final List<Map<String, dynamic>> _queuedPings = [];
 
+  // Crew fleet selection, loaded from /crew/buses and /crew/routes.
+  bool _loading = true;
+  String? _error;
+  List<Bus> _buses = [];
+  List<Route> _routes = [];
+  Bus? _selectedBus;
+  Route? _selectedRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFleet();
+  }
+
   @override
   void dispose() {
     _positionSub?.cancel();
@@ -34,12 +48,50 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
     super.dispose();
   }
 
+  /// Load the buses and routes visible to the crew member's operator.
+  Future<void> _loadFleet() async {
+    final token = CrewSession.token;
+    if (token == null) {
+      setState(() {
+        _loading = false;
+        _error = 'No crew session. Please sign in again.';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final buses = await _api.listCrewBuses(token);
+      final routes = await _api.listCrewRoutes(token);
+      if (!mounted) return;
+      setState(() {
+        _buses = buses;
+        _routes = routes;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  bool get _canStartTrip =>
+      !_tripActive && _selectedBus != null && _selectedRoute != null;
+
   Future<void> _startTrip() async {
-    // In production, bus_id/route_id come from the Configuration step
-    // (Node 2 of the flywheel) rather than being hardcoded here.
+    // bus_id/route_id come from the crew's own operator fleet, selected above.
+    if (_selectedBus == null || _selectedRoute == null) return;
     try {
       final tripId = await _api.startTrip(
-        TripStartRequest(busId: 1, routeId: 1),
+        TripStartRequest(
+          busId: _selectedBus!.id,
+          routeId: _selectedRoute!.id,
+        ),
         CrewSession.token!,
       );
       setState(() {
@@ -134,6 +186,86 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  Widget _buildFleetPanel() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Column(
+        children: [
+          Text(_error!, style: const TextStyle(color: Colors.red)),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _loadFleet,
+            child: const Text('Retry'),
+          ),
+        ],
+      );
+    }
+
+    if (_buses.isEmpty || _routes.isEmpty) {
+      final message = _buses.isEmpty && _routes.isEmpty
+          ? 'No buses or routes assigned to your operator. Trip Start is disabled.'
+          : _buses.isEmpty
+              ? 'No buses assigned to your operator. Trip Start is disabled.'
+              : 'No routes assigned to your operator. Trip Start is disabled.';
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFC9D3D6)),
+          borderRadius: BorderRadius.circular(8),
+          color: const Color(0xFFF4EDEA),
+        ),
+        child: Text(
+          message,
+          style: const TextStyle(color: Color(0xFF8A4B34)),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        DropdownButtonFormField<int>(
+          key: ValueKey('bus_${_selectedBus?.id}'),
+          decoration: const InputDecoration(labelText: 'Bus'),
+          initialValue: _selectedBus?.id,
+          items: _buses
+              .map((bus) => DropdownMenuItem<int>(
+                    value: bus.id,
+                    child: Text(bus.registrationNumber),
+                  ))
+              .toList(),
+          onChanged: (id) {
+            if (id == null) return;
+            setState(() {
+              _selectedBus = _buses.firstWhere((b) => b.id == id);
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          key: ValueKey('route_${_selectedRoute?.id}'),
+          decoration: const InputDecoration(labelText: 'Route'),
+          initialValue: _selectedRoute?.id,
+          items: _routes
+              .map((route) => DropdownMenuItem<int>(
+                    value: route.id,
+                    child: Text(
+                      '${route.name} (${route.origin} \u2192 ${route.destination})',
+                    ),
+                  ))
+              .toList(),
+          onChanged: (id) {
+            if (id == null) return;
+            setState(() {
+              _selectedRoute = _routes.firstWhere((r) => r.id == id);
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -158,6 +290,8 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            _buildFleetPanel(),
+            const SizedBox(height: 24),
             SizedBox(
               height: 140,
               child: FilledButton(
@@ -165,7 +299,7 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
                   backgroundColor: const Color(0xFFC97B4A),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: _tripActive ? _endTrip : _startTrip,
+                onPressed: _tripActive ? _endTrip : (_canStartTrip ? _startTrip : null),
                 child: Text(
                   _tripActive ? 'End Trip' : 'One-Tap\nTrip Start',
                   textAlign: TextAlign.center,

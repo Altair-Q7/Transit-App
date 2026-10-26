@@ -125,6 +125,37 @@ class ApiService {
     );
   }
 
+  /// Get the authenticated crew member's profile.
+  Future<CrewProfile> getCrewMe(String token) async {
+    return _get<CrewProfile>(
+      '/crew/me',
+      token,
+      (json) => CrewProfile.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  /// List buses visible to the crew member's operator.
+  Future<List<Bus>> listCrewBuses(String token) async {
+    return _get<List<Bus>>(
+      '/crew/buses',
+      token,
+      (json) => (json as List)
+          .map((e) => Bus.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// List routes visible to the crew member's operator.
+  Future<List<Route>> listCrewRoutes(String token) async {
+    return _get<List<Route>>(
+      '/crew/routes',
+      token,
+      (json) => (json as List)
+          .map((e) => Route.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
   /// Start a new trip.
   Future<Trip> startTrip(TripStartRequest request, String token) async {
     return _post<Trip>(

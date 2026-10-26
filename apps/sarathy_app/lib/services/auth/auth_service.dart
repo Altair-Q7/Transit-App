@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core.dart';
 import '../../models.dart';
+import '../api/api_service.dart';
 
 /// Authentication service for managing user sessions.
 class AuthService {
@@ -54,12 +55,23 @@ class AuthService {
   }
 
   /// Initialize crew session from stored token.
+  ///
+  /// Loads the real crew profile from /crew/me when possible. On any failure
+  /// falls back to placeholder ids so the app still starts.
   static Future<void> initializeCrewSession() async {
     final token = await getCrewToken();
     if (token != null) {
-      // In a real app, you might validate the token or fetch crew info
-      // For now, we just mark as logged in
-      CrewSession.setSession(token: token, crewId: 0, operatorId: 0);
+      try {
+        final profile = await ApiService().getCrewMe(token);
+        CrewSession.setSession(
+          token: token,
+          crewId: profile.id,
+          operatorId: profile.operatorId,
+        );
+      } catch (_) {
+        // Keep the previous fallback so the app still starts.
+        CrewSession.setSession(token: token, crewId: 0, operatorId: 0);
+      }
     }
   }
 }
