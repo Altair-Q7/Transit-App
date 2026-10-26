@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     eta_gps_stale_seconds: int = 30          # ping interval crew app is expected to hit
     eta_confidence_speed_variance: float = 0.35
     eta_stop_match_radius_m: int = 150       # ping within this many metres of a stop advances trip progress
+    eta_stop_dwell_seconds: int = 20         # assumed dwell time added for each intermediate stop in route ETAs
 
     # Security / production-readiness
     auto_create_tables: bool = True   # dev convenience only — set False once Alembic manages schema

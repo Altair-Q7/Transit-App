@@ -81,6 +81,8 @@ async def get_eta_for_stop(stop_id: int, request: Request, db: Session = Depends
                 stops=route_stops,
                 target_sequence=stop.sequence,
                 current_speed_kmh=current_speed_kmh,
+                last_stop_sequence=trip.last_stop_sequence,
+                dwell_seconds=settings.eta_stop_dwell_seconds,
             )
         else:
             estimate = estimate_eta(
