@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -16,6 +18,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def operator_signup(payload: OperatorSignup, request: Request, db: Session = Depends(get_db)):
     """Node 1 of the Trip Lifecycle Flywheel: Setup (Operator Registration)."""
     await enforce_rate_limit(request, settings.rate_limit_auth, bucket="operator_signup")
+
+    configured_code = settings.operator_signup_code
+    if configured_code:
+        submitted_code = payload.invite_code
+        if not submitted_code or not secrets.compare_digest(submitted_code, configured_code):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "A valid invite code is required")
+    elif settings.env.lower() == "production":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Operator signup is disabled")
 
     if db.query(Operator).filter(Operator.email == payload.email).first():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email already registered")

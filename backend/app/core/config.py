@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     rate_limit_default: str = "60/minute"
     rate_limit_auth: str = "10/minute"
 
+    # Invite code required to self-serve operator signup. When unset, signup
+    # is only allowed outside production (see endpoints/auth.py).
+    operator_signup_code: str | None = None
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

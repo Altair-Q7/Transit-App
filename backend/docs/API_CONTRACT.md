@@ -27,7 +27,7 @@ Source of truth for client teams. Derived from the routers registered in
 | Method | Path | Auth | Request | Response model | Success | Other statuses |
 |---|---|---|---|---|---|---|
 | GET | `/health` | none | — | `{status, service, env}` | 200 | — |
-| POST | `/auth/operator/signup` | none | `OperatorSignup` | `Token` | 200 | 400 duplicate email, 429 |
+| POST | `/auth/operator/signup` | none | `OperatorSignup` | `Token` | 200 | 400 duplicate email, 403 invite/signup disabled, 429 |
 | POST | `/auth/operator/login` | none | form: `username`, `password` | `Token` | 200 | 401 bad credentials, 429 |
 | POST | `/auth/crew/login` | none | form: `username` (phone), `password` | `Token` | 200 | 401 bad credentials, 429 |
 | POST | `/buses` | operator | `BusCreate` | `BusOut` | 200 | 401 |
@@ -58,8 +58,12 @@ Source of truth for client teams. Derived from the routers registered in
 Public. Body `OperatorSignup`:
 
 ```json
-{"name": "Kerala Lines", "email": "ops@example.com", "password": "secret"}
+{"name": "Kerala Lines", "email": "ops@example.com", "password": "secret", "invite_code": "<operator invite code>"}
 ```
+
+`invite_code` is optional in the schema but is required when the backend has
+`OPERATOR_SIGNUP_CODE` configured. When it is not configured, signup is only
+allowed outside production (in production it is disabled entirely).
 
 `200` → `Token`:
 
@@ -67,8 +71,11 @@ Public. Body `OperatorSignup`:
 {"access_token": "<jwt>", "token_type": "bearer", "role": "operator"}
 ```
 
-Errors: `400 {"detail": "Email already registered"}`; `429` when over the
-auth rate limit.
+Errors: `403 {"detail": "A valid invite code is required"}` when a code is
+configured but missing/mismatched; `403 {"detail": "Operator signup is
+disabled"}` in production when no code is configured;
+`400 {"detail": "Email already registered"}`; `429` when over the auth rate
+limit.
 
 ### POST `/api/v1/auth/operator/login`
 Public. `Content-Type: application/x-www-form-urlencoded` with
@@ -265,7 +272,7 @@ Operator. `200` →
 ## Models
 
 ```text
-OperatorSignup  {name: str, email: str(email), password: str}
+OperatorSignup  {name: str, email: str(email), password: str, invite_code: str|null = null}
 Token           {access_token: str, token_type: "bearer", role: str}
 CrewProvision   {name: str, phone: str, password: str, role: "driver"|"conductor" = "driver"}
 CrewOut         {id: int, name: str, phone: str, role: str}

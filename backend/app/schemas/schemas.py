@@ -10,6 +10,7 @@ class OperatorSignup(BaseModel):
     name: str
     email: EmailStr
     password: str
+    invite_code: str | None = None
 
 
 class Token(BaseModel):
