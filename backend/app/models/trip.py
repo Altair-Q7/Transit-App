@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -26,6 +26,7 @@ class Trip(Base):
     bus_id: Mapped[int] = mapped_column(Integer, ForeignKey("buses.id"), nullable=False)
     route_id: Mapped[int] = mapped_column(Integer, ForeignKey("routes.id"), nullable=False)
     crew_id: Mapped[int] = mapped_column(Integer, ForeignKey("crew.id"), nullable=True)
+    last_stop_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     status: Mapped[TripStatus] = mapped_column(Enum(TripStatus), default=TripStatus.SCHEDULED)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -46,6 +47,9 @@ class TripPing(Base):
     keeps write volume on the relational DB sane.
     """
     __tablename__ = "trip_pings"
+    __table_args__ = (
+        Index("ix_trip_pings_trip_id_recorded_at", "trip_id", "recorded_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     trip_id: Mapped[int] = mapped_column(Integer, ForeignKey("trips.id"), nullable=False)

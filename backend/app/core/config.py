@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # ETA engine tuning (Phase: MVP -> Version 2 -> Version 3, see roadmap)
     eta_gps_stale_seconds: int = 30          # ping interval crew app is expected to hit
     eta_confidence_speed_variance: float = 0.35
+    eta_stop_match_radius_m: int = 150       # ping within this many metres of a stop advances trip progress
 
     # Security / production-readiness
     auto_create_tables: bool = True   # dev convenience only — set False once Alembic manages schema

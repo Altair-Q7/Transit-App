@@ -149,7 +149,11 @@ Crew. Body `GpsPing`:
 ```
 
 `200` → `{"status": "ok"}` after caching the position in Redis and
-broadcasting it on the trip WebSocket. `409` if the trip is not active.
+broadcasting it on the trip WebSocket. Additionally, if the ping is within
+150 m of a route stop, the trip's persisted progress advances to that stop's
+sequence (never backwards); a sample ping row is stored at most once every
+30 seconds per trip. Neither behaviour changes the response body. `409` if
+the trip is not active.
 
 ### POST `/api/v1/trips/incident`
 Crew. Body `IncidentReport`:

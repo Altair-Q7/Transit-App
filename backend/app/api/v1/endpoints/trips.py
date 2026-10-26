@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_crew_claims
+from app.core.config import settings
 from app.db.session import get_db
-from app.models.fleet import Bus, Route
+from app.models.fleet import Bus, Route, Stop
 from app.models.trip import Incident, IncidentType, Trip, TripPing, TripStatus
 from app.schemas.schemas import GpsPing, IncidentReport, TripOut, TripStart
 from app.services import redis_client
+from app.services.eta_engine import haversine_km
 from app.services.ws_manager import manager
 
 router = APIRouter(prefix="/trips", tags=["trips"])
@@ -19,6 +21,11 @@ def _claim_id(claims: dict, key: str) -> int:
         return int(claims[key])
     except (KeyError, TypeError, ValueError):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid crew token")
+
+
+def _as_utc(value: datetime) -> datetime:
+    """DB drivers may hand back naive datetimes; treat those as UTC."""
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
 
 def _owned_trip(trip_id: int, crew_claims: dict, db: Session) -> Trip:
@@ -114,6 +121,67 @@ async def gps_ping(
         "ts": ts,
     }
     await manager.broadcast(payload.trip_id, update)
+
+    now = datetime.now(timezone.utc)
+    changed = False
+
+    stops = (
+        db.query(Stop)
+        .filter(Stop.route_id == trip.route_id)
+        .order_by(Stop.sequence)
+        .all()
+    )
+    if stops:
+        nearest_stop = min(
+            stops,
+            key=lambda stop: haversine_km(
+                payload.latitude,
+                payload.longitude,
+                stop.latitude,
+                stop.longitude,
+            ),
+        )
+        distance_m = (
+            haversine_km(
+                payload.latitude,
+                payload.longitude,
+                nearest_stop.latitude,
+                nearest_stop.longitude,
+            )
+            * 1000
+        )
+        if distance_m <= settings.eta_stop_match_radius_m and (
+            trip.last_stop_sequence is None
+            or nearest_stop.sequence > trip.last_stop_sequence
+        ):
+            # Progress is monotonic: a later stop advances it, an earlier
+            # or unseen stop never moves it backwards.
+            trip.last_stop_sequence = nearest_stop.sequence
+            changed = True
+
+    newest_ping = (
+        db.query(TripPing)
+        .filter(TripPing.trip_id == trip.id)
+        .order_by(TripPing.recorded_at.desc(), TripPing.id.desc())
+        .first()
+    )
+    if newest_ping is None or (now - _as_utc(newest_ping.recorded_at)).total_seconds() >= 30:
+        # Sample history at most once every 30s per trip; live updates stay
+        # on the Redis fast path above.
+        db.add(
+            TripPing(
+                trip_id=trip.id,
+                latitude=payload.latitude,
+                longitude=payload.longitude,
+                speed_kmh=payload.speed_kmh,
+                recorded_at=now,
+            )
+        )
+        changed = True
+
+    if changed:
+        db.commit()
+
     return {"status": "ok"}
 
 
