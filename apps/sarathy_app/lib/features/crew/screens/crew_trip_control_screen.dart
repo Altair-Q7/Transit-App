@@ -128,7 +128,7 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
   }
 
   void _beginGpsStream() {
-    _positionSub = _gps.watchPosition().listen((pos) async {
+    _positionSub = _gps.watchPosition(background: true).listen((pos) async {
       if (_tripId == null) return;
       setState(() => _lastPing = DateTime.now());
 

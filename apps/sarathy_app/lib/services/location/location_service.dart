@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// Location service for GPS handling.
@@ -38,7 +41,31 @@ class LocationService {
   }
 
   /// Watch position stream with ~5s cadence / 5m distance filter.
-  Stream<Position> watchPosition() {
+  ///
+  /// When [background] is true on Android, geolocator starts its
+  /// [GeolocatorLocationService] with a persistent notification so a crew
+  /// trip keeps reporting while the app is not in the foreground. iOS
+  /// background mode is configured separately in the (crew-only) Xcode
+  /// scheme and is not handled here.
+  Stream<Position> watchPosition({bool background = false}) {
+    if (background && !kIsWeb && Platform.isAndroid) {
+      return Geolocator.getPositionStream(
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 5,
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationTitle: 'Sarathy crew trip',
+            notificationText: 'Sharing this bus\'s live position.',
+            notificationIcon: AndroidResource(
+              name: 'ic_launcher',
+              defType: 'mipmap',
+            ),
+            enableWakeLock: true,
+            setOngoing: true,
+          ),
+        ),
+      );
+    }
     const settings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 5,

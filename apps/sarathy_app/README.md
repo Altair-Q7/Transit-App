@@ -58,6 +58,9 @@ committed. See `docs/release.md` once the signing keys exist.
 iOS crew background-location mode (`UIBackgroundModes` / `location`) and dedicated
 Xcode schemes/signing are still pending — they cannot be verified on Linux and
 are intentionally not added to the shared Info.plist (would affect passenger).
+On Android the crew build runs geolocator's foreground location service with a
+persistent notification during an active trip; the passenger build declares no
+location permission at all.
 
 ## Structure
 
