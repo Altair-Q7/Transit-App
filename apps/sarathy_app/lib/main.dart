@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'services/auth/auth_service.dart';
@@ -9,11 +10,20 @@ void main() async {
   // Initialize auth state
   await AuthService.initializeCrewSession();
 
-  runApp(const SarathyApp());
+  runApp(const SarathyApp(flavor: AppFlavor.dev));
 }
 
-class SarathyApp extends StatelessWidget {
-  const SarathyApp({super.key});
+class SarathyApp extends StatefulWidget {
+  final AppFlavor flavor;
+
+  const SarathyApp({super.key, this.flavor = AppFlavor.dev});
+
+  @override
+  State<SarathyApp> createState() => _SarathyAppState();
+}
+
+class _SarathyAppState extends State<SarathyApp> {
+  late final GoRouter _router = AppRouter.create(widget.flavor);
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +31,7 @@ class SarathyApp extends StatelessWidget {
       title: 'Sarathy',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: AppRouter.router,
+      routerConfig: _router,
     );
   }
 }

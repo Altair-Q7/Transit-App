@@ -1,7 +1,7 @@
 name: sarathy_app
 description: Sarathy — Unified Transit Intelligence App (Passenger, Crew, Operator)
 publish_to: "none"
-version: 0.1.0
+version: 0.1.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
