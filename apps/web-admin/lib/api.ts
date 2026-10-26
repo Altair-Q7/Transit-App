@@ -84,6 +84,8 @@ export type Trip = {
   status: string;
   started_at: string | null;
   ended_at?: string | null;
+  crew_id?: number | null;
+  created_at?: string;
 };
 
 export type LivePosition = {
@@ -94,18 +96,21 @@ export type LivePosition = {
 };
 
 export async function listActiveTrips(): Promise<Trip[]> {
-  const response = await apiFetch<Trip[] | { trips?: Trip[] }>("/trips?status=active");
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.trips)) return response.trips;
-  throw new Error("The trip list response was not valid");
+  const response = await apiFetch<Trip[] | { trips?: Trip[] }>("/operator/trips");
+  const trips = Array.isArray(response)
+    ? response
+    : Array.isArray(response.trips)
+      ? response.trips
+      : (() => { throw new Error("The trip list response was not valid"); })();
+  return trips.filter((trip) => trip.status === "active");
 }
 
 export function getTripLivePosition(tripId: number) {
   return apiFetch<LivePosition>(`/trips/${tripId}/live`).then((position) => {
     const lat = Number(position.lat);
     const lng = Number(position.lng);
-    const speedRaw: number | string | null | undefined = position.speed_kmh;
-    const speed = speedRaw == null || speedRaw === "" ? null : Number(speedRaw);
+    const speedRaw = position.speed_kmh;
+    const speed = speedRaw == null ? null : Number(speedRaw);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (speed !== null && !Number.isFinite(speed))) {
       throw new Error("The live position response was not valid");
     }
