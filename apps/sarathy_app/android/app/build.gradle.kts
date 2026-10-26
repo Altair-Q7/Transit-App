@@ -5,9 +5,29 @@ plugins {
 }
 
 android {
-    namespace = "com.example.sarathy_app"
+    namespace = "com.sarathy.transit"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("passenger") {
+            // No applicationIdSuffix: com.sarathy.transit
+            resValue("string", "app_name", "\"Sarathy\"")
+        }
+        create("dev") {
+            applicationIdSuffix = ".dev"  // internal role-picker build
+            resValue("string", "app_name", "\"Sarathy Dev\"")
+        }
+        create("crew") {
+            applicationIdSuffix = ".crew"  // com.sarathy.transit.crew
+            resValue("string", "app_name", "\"Sarathy Crew\"")
+        }
+    }
+
+    buildFeatures {
+        resValues = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -16,7 +36,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.sarathy_app"
+        applicationId = "com.sarathy.transit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -31,8 +51,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // TODO: Add your own signing config for the release build (no keystore committed yet).
+            // Signing with the debug keys for now, so `flutter build apk --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

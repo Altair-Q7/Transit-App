@@ -13,7 +13,7 @@ One Flutter codebase for the Sarathy transit platform.
 |---|---|---|---|
 | `passenger` | `com.sarathy.transit` | Store build | No |
 | `crew` | `com.sarathy.transit.crew` | Sideload / MDM | Yes |
-| dev (default) | `com.sarathy.transit` | Local demos | As configured |
+| `dev` | `com.sarathy.transit.dev` | Local demos (internal) | Crew-level |
 
 The dev build keeps the role-selection screen. The passenger flavor starts
 directly on the passenger experience and contains no login surface.
@@ -36,19 +36,28 @@ Defaults target the Android emulator (`http://10.0.2.2:8000`).
 flutter pub get
 flutter analyze
 flutter test
-flutter run --dart-define=SARATHY_API_URL=...
+flutter run --flavor dev -t lib/main.dart --dart-define=SARATHY_API_URL=...
 ```
+
+`dev` is an internal role-picker build (`com.sarathy.transit.dev`), not a release
+artifact. Product flavors replace the default variant, so a flavor is required
+for every `flutter run` / `flutter build`.
 
 ## Build
 
 ```bash
-flutter build apk --flavor passenger --dart-define=SARATHY_API_URL=...
-flutter build appbundle --flavor passenger --dart-define=SARATHY_API_URL=...
-flutter build apk --flavor crew --dart-define=SARATHY_API_URL=...
+flutter build apk --flavor passenger -t lib/main_passenger.dart --dart-define=SARATHY_API_URL=...
+flutter build appbundle --flavor passenger -t lib/main_passenger.dart --dart-define=SARATHY_API_URL=...
+flutter build apk --flavor crew -t lib/main_crew.dart --dart-define=SARATHY_API_URL=...
+flutter build appbundle --flavor crew -t lib/main_crew.dart --dart-define=SARATHY_API_URL=...
 ```
 
 Release signing requires `android/key.properties` and a keystore; neither is
 committed. See `docs/release.md` once the signing keys exist.
+
+iOS crew background-location mode (`UIBackgroundModes` / `location`) and dedicated
+Xcode schemes/signing are still pending — they cannot be verified on Linux and
+are intentionally not added to the shared Info.plist (would affect passenger).
 
 ## Structure
 

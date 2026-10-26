@@ -1,4 +1,4 @@
-package com.example.sarathy_app
+package com.sarathy.transit
 
 import io.flutter.embedding.android.FlutterActivity
 
