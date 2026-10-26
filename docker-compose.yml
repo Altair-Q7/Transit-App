@@ -7,8 +7,6 @@ services:
       MARIADB_DATABASE: ${MARIADB_DATABASE:-sarathy}
       MARIADB_USER: ${MARIADB_USER:-sarathy}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
-    ports:
-      - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
@@ -20,10 +18,24 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+
+  # One-shot schema migration. Runs before the backend starts so Alembic is
+  # the only schema path under compose (AUTO_CREATE_TABLES is forced off below).
+  migrate:
+    image: sarathy-backend:local
+    build: ./backend
+    restart: "no"
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: mysql+pymysql://${MARIADB_USER:-sarathy}:${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}@mariadb:3306/${MARIADB_DATABASE:-sarathy}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
 
   backend:
+    image: sarathy-backend:local
     build: ./backend
     restart: unless-stopped
     env_file:
@@ -33,14 +45,35 @@ services:
       # see .env.example) rather than being duplicated here.
       DATABASE_URL: mysql+pymysql://${MARIADB_USER:-sarathy}:${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}@mariadb:3306/${MARIADB_DATABASE:-sarathy}
       REDIS_URL: redis://redis:6379/0
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      AUTO_CREATE_TABLES: "false"
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    # Local dev only: production should front the API with a reverse proxy
+    # instead of publishing the port directly.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       mariadb:
         condition: service_healthy
       redis:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   # Automated nightly backups (mysqldump, gzip, rotated after
   # BACKUP_RETENTION_DAYS). Files land in the `backups_data` volume — mount

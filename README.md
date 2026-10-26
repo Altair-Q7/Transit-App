@@ -38,13 +38,16 @@ cp backend/.env.example backend/.env
 docker compose up --build
 ```
 
-- API: `http://localhost:8000` (docs at `/docs`)
+- API: `http://localhost:8000` (docs at `/docs`, bound to loopback only)
 - Operator console: `http://localhost:3000`
 
-Apply migrations and optionally load the Kerala demo dataset:
+Database migrations run automatically: the one-shot `migrate` service executes
+`alembic upgrade head` before the backend starts. MariaDB and Redis are not
+published to the host; they are reachable only on the Compose network.
+
+Optionally load the Kerala demo dataset:
 
 ```bash
-docker compose exec backend alembic upgrade head
 docker compose exec backend python -m scripts.seed_kerala_demo --apply
 ```
 
@@ -100,6 +103,7 @@ Everything environment-specific is injected; no production domain is hardcoded.
 | `REDIS_URL` | Backend | Live cache |
 | `SECRET_KEY` | Backend | JWT signing; required in production |
 | `CORS_ORIGINS` | Backend | Allowed browser origins |
+| `FORWARDED_ALLOW_IPS` | Backend | Exact reverse-proxy IP trusted for `X-Forwarded-For` (no CIDR support in uvicorn 0.30.6; never `*`) |
 | `OPERATOR_SIGNUP_CODE` | Backend | Invite code gating operator signup |
 | `NEXT_PUBLIC_API_URL` | Web admin | API base URL, inlined at build time |
 | `SARATHY_API_URL`, `SARATHY_WS_URL` | Flutter | API and WebSocket base URLs |
