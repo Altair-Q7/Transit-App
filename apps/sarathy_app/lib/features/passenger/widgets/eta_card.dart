@@ -4,15 +4,47 @@ import '../../../core/utils/app_utils.dart';
 
 /// Mirrors the "Passenger Intelligence" mockup: location, live ETA +
 /// confidence, and an on-time/delayed status chip.
+///
+/// The API reports status as one of: `en_route`, `departed`,
+/// `no_live_data`. Anything else is treated as unknown.
 class EtaCard extends StatelessWidget {
   const EtaCard({super.key, required this.stopName, required this.estimate});
 
   final String stopName;
   final EtaEstimate estimate;
 
-  Color get _statusColor => estimate.status == 'on_time'
-      ? const Color(0xFF4C7A5E)
-      : const Color(0xFFC97B4A);
+  Color get _statusColor {
+    switch (estimate.status) {
+      case 'en_route':
+        return const Color(0xFF4C7A5E);
+      case 'departed':
+        return const Color(0xFF6B7C86);
+      case 'no_live_data':
+        return const Color(0xFFC97B4A);
+      default:
+        return const Color(0xFF6B7C86);
+    }
+  }
+
+  String get _statusLabel {
+    switch (estimate.status) {
+      case 'en_route':
+        return 'Status: On the way';
+      case 'departed':
+        return 'Status: Departed';
+      case 'no_live_data':
+        return 'Status: No live data';
+      default:
+        return 'Status: Unknown';
+    }
+  }
+
+  String get _etaText {
+    if (estimate.status == 'no_live_data') {
+      return 'Live ETA: awaiting live data';
+    }
+    return 'Live ETA: ${estimate.etaMinutes.round()} mins  •  Confidence: ${formatConfidence(estimate.confidence)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +61,7 @@ class EtaCard extends StatelessWidget {
           children: [
             Text('Location: $stopName', style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text(
-              'Live ETA: ${estimate.etaMinutes.round()} mins  •  Confidence: ${formatConfidence(estimate.confidence)}',
-            ),
+            Text(_etaText),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -41,7 +71,7 @@ class EtaCard extends StatelessWidget {
                   decoration: BoxDecoration(color: _statusColor, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 6),
-                Text(estimate.status == 'on_time' ? 'Status: On Time' : 'Status: Delayed'),
+                Text(_statusLabel),
               ],
             ),
           ],
