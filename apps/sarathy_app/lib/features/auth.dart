@@ -1,1 +1,1 @@
-export 'screens.dart';
+export 'auth/screens.dart';

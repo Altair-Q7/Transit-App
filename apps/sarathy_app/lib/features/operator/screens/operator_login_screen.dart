@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../services.dart';
 import '../../../models.dart';
 
@@ -28,7 +29,7 @@ class _OperatorLoginScreenState extends State<OperatorLoginScreen> {
       ));
       await AuthService.saveOperatorSession(tokens);
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('operatorDashboard');
+      context.goNamed('operatorDashboard');
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -70,7 +71,7 @@ class _OperatorLoginScreenState extends State<OperatorLoginScreen> {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => Navigator.of(context).pushReplacementNamed('roleSelection'),
+              onPressed: () => context.goNamed('roleSelection'),
               child: const Text('Back to role selection'),
             ),
           ],

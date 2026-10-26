@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../models.dart';
-import '../../../../services.dart';
+import '../../../models.dart';
+import '../../../services.dart';
 import '../widgets/eta_card.dart';
 
 /// Passenger Access (flywheel node 5): "Search ETA".
-/// For the MVP scaffold, stop selection is a hardcoded demo list —
-/// wire this up to a real stop search/autocomplete endpoint later.
+/// Stop selection uses the public stop-search endpoint before loading ETAs.
 class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
 
@@ -14,19 +13,10 @@ class PassengerHomeScreen extends StatefulWidget {
   State<PassengerHomeScreen> createState() => _PassengerHomeScreenState();
 }
 
-class _DemoStop {
-  final int id;
-  final String name;
-  const _DemoStop(this.id, this.name);
-}
-
 class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   final _api = ApiService();
-  final _demoStops = const [
-    _DemoStop(1, 'Aluva Railway Station'),
-    _DemoStop(2, 'Vytilla Hub'),
-    _DemoStop(3, 'Kakkanad Infopark Gate'),
-  ];
+  final _searchController = TextEditingController();
+  List<Stop> _stops = [];
 
   List<EtaEstimate> _results = [];
   int? _selectedStopId;
@@ -34,7 +24,31 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   bool _loading = false;
   String? _error;
 
-  Future<void> _search(_DemoStop stop) async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchStops() async {
+    final query = _searchController.text.trim();
+    if (query.length < 2) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _results = [];
+    });
+    try {
+      final stops = await _api.searchStops(query);
+      if (mounted) setState(() => _stops = stops);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _search(Stop stop) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -47,7 +61,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -59,18 +73,36 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              spacing: 8,
-              children: _demoStops
-                  .map((s) => ChoiceChip(
-                        label: Text(s.name),
-                        selected: _selectedStopId == s.id,
-                        onSelected: (_) => _search(s),
-                      ))
-                  .toList(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _searchStops(),
+              decoration: InputDecoration(
+                labelText: 'Search bus stop',
+                hintText: 'e.g. Aluva or Infopark',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _searchStops,
+                ),
+              ),
             ),
           ),
+          if (_stops.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(
+                spacing: 8,
+                children: _stops
+                    .map((stop) => ChoiceChip(
+                          label: Text(stop.name),
+                          selected: _selectedStopId == stop.id,
+                          onSelected: (_) => _search(stop),
+                        ))
+                    .toList(),
+              ),
+            ),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),

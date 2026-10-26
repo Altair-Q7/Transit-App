@@ -1,3 +1,5 @@
+library;
+
 /// Trip related models.
 
 enum TripStatus {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../services.dart';
-import '../../../../models.dart';
-import '../../../../features.dart';
+import 'package:go_router/go_router.dart';
+import '../../../services.dart';
+import '../../../models.dart';
 
 class CrewLoginScreen extends StatefulWidget {
   const CrewLoginScreen({super.key});
@@ -34,7 +34,7 @@ class _CrewLoginScreenState extends State<CrewLoginScreen> {
         operatorId: 0,
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('crewTripControl');
+      context.goNamed('crewTripControl');
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -71,7 +71,7 @@ class _CrewLoginScreenState extends State<CrewLoginScreen> {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => Navigator.of(context).pushReplacementNamed('roleSelection'),
+              onPressed: () => context.goNamed('roleSelection'),
               child: const Text('Back to role selection'),
             ),
           ],

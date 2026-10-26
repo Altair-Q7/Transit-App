@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../models.dart';
-import '../../../services.dart';
 
 /// Incidents management screen for operators.
 /// View and verify incidents reported by crew.

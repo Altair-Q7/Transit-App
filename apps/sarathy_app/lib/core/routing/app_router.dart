@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import '../../../features.dart';
+import '../../features.dart';
 
 /// Centralized routing configuration for the Sarathy app.
 /// Uses go_router for declarative, type-safe navigation.

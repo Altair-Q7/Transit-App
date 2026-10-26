@@ -1,2 +1,2 @@
-export 'screens.dart';
-export 'widgets.dart';
+export 'shared/screens.dart';
+export 'shared/widgets.dart';

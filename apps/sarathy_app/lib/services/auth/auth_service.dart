@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../core.dart';
-import '../../../models.dart';
+import '../../core.dart';
+import '../../models.dart';
 
 /// Authentication service for managing user sessions.
 class AuthService {
@@ -32,7 +32,7 @@ class AuthService {
   static Future<UserRole?> getUserRole() async {
     final roleStr = await _storage.read(key: AppConstants.storageKeyUserRole);
     if (roleStr == null) return null;
-    return UserRole.fromString(roleStr);
+    return UserRoleExtension.fromString(roleStr);
   }
 
   /// Check if operator is logged in.

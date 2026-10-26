@@ -1,3 +1,5 @@
+library;
+
 /// Operator related models.
 
 enum SubscriptionTier {

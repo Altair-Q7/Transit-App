@@ -50,3 +50,4 @@ build/
 # Local backups / logs
 *.log
 infra/backup/backups/
+**/ios/Runner/GeneratedPluginRegistrant.*

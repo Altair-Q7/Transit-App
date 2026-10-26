@@ -2,10 +2,16 @@
 class AppConstants {
   /// Base URL for the Sarathy Core Platform API.
   /// Change this for different environments (dev, staging, prod).
-  static const String defaultApiBaseUrl = 'http://localhost:8000/api/v1';
+  static const String defaultApiBaseUrl = String.fromEnvironment(
+    'SARATHY_API_URL',
+    defaultValue: 'http://10.0.2.2:8000/api/v1',
+  );
 
   /// Base WebSocket URL for real-time updates.
-  static const String defaultWsBaseUrl = 'ws://localhost:8000';
+  static const String defaultWsBaseUrl = String.fromEnvironment(
+    'SARATHY_WS_URL',
+    defaultValue: 'ws://10.0.2.2:8000',
+  );
 
   /// Default GPS ping interval (seconds) matching crew app cadence.
   static const int gpsPingIntervalSeconds = 5;

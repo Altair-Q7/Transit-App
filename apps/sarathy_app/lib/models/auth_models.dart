@@ -1,3 +1,5 @@
+library;
+
 /// Authentication related models.
 
 /// User roles in the Sarathy platform.

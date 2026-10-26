@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 
 /// Entry point for the Sarathy app - role selection screen.
@@ -10,7 +11,7 @@ class RoleSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -44,7 +45,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 title: 'Passenger',
                 subtitle: 'Find stops, check ETAs, track buses',
                 color: Colors.blue,
-                onTap: () => Navigator.of(context).pushReplacementNamed('passengerHome'),
+                onTap: () => context.goNamed('passengerHome'),
               ),
               const SizedBox(height: 16),
               _RoleCard(
@@ -52,7 +53,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 title: 'Crew',
                 subtitle: 'Start trips, report GPS, log incidents',
                 color: Colors.orange,
-                onTap: () => Navigator.of(context).pushReplacementNamed('crewLogin'),
+                onTap: () => context.goNamed('crewLogin'),
               ),
               const SizedBox(height: 16),
               _RoleCard(
@@ -60,7 +61,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 title: 'Operator',
                 subtitle: 'Manage fleet, routes, monitor operations',
                 color: Colors.green,
-                onTap: () => Navigator.of(context).pushReplacementNamed('operatorLogin'),
+                onTap: () => context.goNamed('operatorLogin'),
               ),
             ],
           ),
@@ -98,7 +99,7 @@ class _RoleCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 32,
-                backgroundColor: color.withOpacity(0.1),
+                backgroundColor: color.withValues(alpha: 0.1),
                 child: Icon(icon, size: 32, color: color),
               ),
               const SizedBox(width: 24),

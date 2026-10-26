@@ -7,10 +7,10 @@ import '../../models.dart';
 class ApiService {
   ApiService({String? baseUrl}) : _baseUrl = baseUrl;
 
-  String? _baseUrl;
+  final String? _baseUrl;
 
   Future<String> get _resolvedBaseUrl async {
-    if (_baseUrl != null) return _baseUrl!;
+    if (_baseUrl != null) return _baseUrl;
     return await AppConfig.getApiBaseUrl();
   }
 
@@ -84,6 +84,17 @@ class ApiService {
     }
     final List<dynamic> data = jsonDecode(response.body);
     return data.map((e) => EtaEstimate.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Search public bus stops for passengers.
+  Future<List<Stop>> searchStops(String query) async {
+    final url = await _resolvedBaseUrl;
+    final response = await http.get(Uri.parse('$url/stops/search?q=${Uri.encodeQueryComponent(query)}'));
+    if (response.statusCode != 200) {
+      throw ApiException('Failed to search stops: ${response.statusCode}', response.statusCode);
+    }
+    final data = jsonDecode(response.body) as List<dynamic>;
+    return data.map((e) => Stop.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Get live position for a trip (passenger-facing).

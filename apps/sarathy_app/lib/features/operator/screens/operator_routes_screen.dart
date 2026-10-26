@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Route;
-import '../../../../models.dart' as models;
-import '../../../../services.dart';
+import '../../../models.dart' as models;
+import '../../../services.dart';
 
 /// Routes & stops management screen.
 class OperatorRoutesScreen extends StatefulWidget {

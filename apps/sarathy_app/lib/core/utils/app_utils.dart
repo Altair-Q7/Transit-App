@@ -1,3 +1,5 @@
+library;
+
 /// Utility functions for the Sarathy app.
 
 /// Formats a duration in minutes to a human-readable string.
