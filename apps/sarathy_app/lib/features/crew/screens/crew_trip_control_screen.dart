@@ -23,9 +23,9 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
   int? _tripId;
   DateTime? _lastPing;
 
-  // Offline Queuing edge case: pings that failed to send while offline
-  // are held here and flushed opportunistically on the next successful ping.
-  final List<Map<String, dynamic>> _queuedPings = [];
+  // Offline queue: pings that failed while offline are persisted and flushed
+  // in order once connectivity returns; they survive an app restart.
+  final OfflinePingQueue _queue = OfflinePingQueue();
 
   // Crew fleet selection, loaded from /crew/buses and /crew/routes.
   bool _loading = true;
@@ -38,6 +38,11 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
   @override
   void initState() {
     super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _queue.load();
     _loadFleet();
   }
 
@@ -109,6 +114,7 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
     if (_tripId == null) return;
     try {
       await _api.endTrip(_tripId!, CrewSession.token!);
+      await _queue.clearForTrip(_tripId!);
       _positionSub?.cancel();
       setState(() {
         _tripActive = false;
@@ -136,28 +142,42 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
           CrewSession.token!,
         );
         // Flush anything queued from a prior offline stretch.
-        while (_queuedPings.isNotEmpty) {
-          final queued = _queuedPings.removeAt(0);
-          await _api.sendGpsPing(
-            GpsPing(
-              tripId: queued['tripId'],
-              latitude: queued['lat'],
-              longitude: queued['lng'],
-              speedKmh: queued['speedKmh'],
-            ),
-            CrewSession.token!,
-          );
-        }
+        await _flushQueuedPings();
       } catch (_) {
         // Local Cache: queue the packet, sync when signal is restored.
-        _queuedPings.add({
-          'tripId': _tripId,
-          'lat': pos.latitude,
-          'lng': pos.longitude,
-          'speedKmh': pos.speed * 3.6,
-        });
+        await _queue.add(QueuedPing(
+          tripId: _tripId!,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          speedKmh: pos.speed * 3.6,
+          queuedAt: DateTime.now(),
+        ));
+        if (!mounted) return;
+        setState(() {});
       }
     });
+  }
+
+  /// Retry queued pings now that connectivity is back. A failed flush never
+  /// escapes: remaining items stay queued for the next attempt.
+  Future<void> _flushQueuedPings() async {
+    try {
+      await _queue.flush(
+        (ping) => _api.sendGpsPing(
+          GpsPing(
+            tripId: ping.tripId,
+            latitude: ping.latitude,
+            longitude: ping.longitude,
+            speedKmh: ping.speedKmh,
+          ),
+          CrewSession.token!,
+        ),
+      );
+    } catch (_) {
+      // Swallow flush failures; items remain queued.
+    }
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _reportIncident(String type) async {
@@ -270,7 +290,7 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Crew Command')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -285,6 +305,7 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Trip: ${_tripActive ? "Active" : "Idle"}'),
+                  Text('Queued: ${_queue.length}'),
                   Text(_lastPing == null ? 'Ping: —' : 'Ping: 5s'),
                 ],
               ),
