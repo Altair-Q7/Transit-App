@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core.dart';
 import '../../models.dart';
@@ -54,24 +56,32 @@ class AuthService {
     CrewSession.clear();
   }
 
-  /// Initialize crew session from stored token.
+  /// Initialize the crew session from the stored token.
   ///
-  /// Loads the real crew profile from /crew/me when possible. On any failure
-  /// falls back to placeholder ids so the app still starts.
+  /// Startup never waits on the network: the token is exposed immediately and
+  /// the profile ids are refreshed in the background with a short timeout.
   static Future<void> initializeCrewSession() async {
     final token = await getCrewToken();
-    if (token != null) {
-      try {
-        final profile = await ApiService().getCrewMe(token);
-        CrewSession.setSession(
-          token: token,
-          crewId: profile.id,
-          operatorId: profile.operatorId,
-        );
-      } catch (_) {
-        // Keep the previous fallback so the app still starts.
-        CrewSession.setSession(token: token, crewId: 0, operatorId: 0);
-      }
+    if (token == null) return;
+
+    CrewSession.setSession(token: token, crewId: 0, operatorId: 0);
+    unawaited(_refreshCrewProfile(token));
+  }
+
+  static Future<void> _refreshCrewProfile(String token) async {
+    try {
+      final profile = await ApiService()
+          .getCrewMe(token)
+          .timeout(const Duration(seconds: 5));
+      // Ignore the result if the session changed while the call was in flight.
+      if (CrewSession.token != token) return;
+      CrewSession.setSession(
+        token: token,
+        crewId: profile.id,
+        operatorId: profile.operatorId,
+      );
+    } catch (_) {
+      // Keep the placeholder ids; the next login will refresh them.
     }
   }
 }

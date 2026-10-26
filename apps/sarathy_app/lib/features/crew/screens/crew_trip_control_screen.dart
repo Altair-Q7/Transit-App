@@ -43,7 +43,8 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
 
   Future<void> _initialize() async {
     await _queue.load();
-    _loadFleet();
+    if (!mounted) return;
+    await _loadFleet();
   }
 
   @override
@@ -145,13 +146,16 @@ class _CrewTripControlScreenState extends State<CrewTripControlScreen> {
         await _flushQueuedPings();
       } catch (_) {
         // Local Cache: queue the packet, sync when signal is restored.
-        await _queue.add(QueuedPing(
-          tripId: _tripId!,
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-          speedKmh: pos.speed * 3.6,
-          queuedAt: DateTime.now(),
-        ));
+        // A storage failure must not break the position stream, so ignore it.
+        try {
+          await _queue.add(QueuedPing(
+            tripId: _tripId!,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            speedKmh: pos.speed * 3.6,
+            queuedAt: DateTime.now(),
+          ));
+        } catch (_) {}
         if (!mounted) return;
         setState(() {});
       }
