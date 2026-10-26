@@ -124,3 +124,23 @@ export function verifyIncident(incidentId: number) {
     { method: "POST" },
   );
 }
+
+export type Incident = {
+  id: number;
+  trip_id: number;
+  type: string;
+  note: string;
+  reported_at: string;
+  admin_verified: boolean;
+  verified_at?: string | null;
+};
+
+export async function listIncidents(): Promise<Incident[]> {
+  const response = await apiFetch<Incident[] | { incidents?: Incident[] }>("/operator/incidents");
+  const incidents = Array.isArray(response)
+    ? response
+    : Array.isArray(response.incidents)
+      ? response.incidents
+      : (() => { throw new Error("The incident list response was not valid"); })();
+  return incidents;
+}

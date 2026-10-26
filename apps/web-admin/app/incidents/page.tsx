@@ -1,37 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import AuthGuard from "@/components/AuthGuard";
-import { verifyIncident } from "@/lib/api";
+import { listIncidents, verifyIncident, type Incident } from "@/lib/api";
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
 
 export default function IncidentsPage() {
-  const [incidentId, setIncidentId] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
 
-  async function handleVerify(event: React.FormEvent) {
-    event.preventDefault();
-    const id = Number(incidentId);
-    if (!Number.isInteger(id) || id < 1) {
-      setError("Enter a valid incident ID.");
-      setMessage(null);
-      return;
-    }
-
+  const loadIncidents = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setMessage(null);
     try {
-      const result = await verifyIncident(id);
-      setMessage(`Incident #${result.id} verified. Passenger notification is enabled.`);
+      setIncidents(await listIncidents());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not verify incident");
+      setError(err instanceof Error ? err.message : "Could not load incidents");
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadIncidents();
+  }, [loadIncidents]);
+
+  const handleVerify = async (id: number) => {
+    setVerifyingId(id);
+    setError(null);
+    try {
+      await verifyIncident(id);
+      await loadIncidents();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not verify incident");
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   return (
     <AuthGuard>
@@ -40,37 +52,88 @@ export default function IncidentsPage() {
         <main className="flex-1 px-10 py-8">
           <p className="font-display text-2xl font-semibold text-ink">Incidents</p>
           <p className="text-slate text-sm mt-1">
-            Verify crew-reported incidents before they are shared with passengers.
+            Review crew-reported incidents and verify them before passengers are notified.
           </p>
 
-          <section className="blueprint-frame bg-white/70 mt-8 max-w-xl px-5 py-5">
-            <p className="font-display text-lg font-semibold text-ink">Verify an incident</p>
-            <p className="text-sm text-slate mt-1">
-              Enter the incident ID returned by the crew report endpoint.
-            </p>
-            <form onSubmit={handleVerify} className="mt-5 flex items-end gap-3">
-              <label className="text-sm text-ink flex-1">
-                Incident ID
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={incidentId}
-                  onChange={(event) => setIncidentId(event.target.value)}
-                  className="mt-1 w-full border border-line rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-rust"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-rust text-white px-4 py-2 rounded hover:bg-rustDark disabled:opacity-60"
-              >
-                {loading ? "Verifying…" : "Verify"}
+          {error && (
+            <div className="bg-red-50 mt-8 px-5 py-4 text-sm text-red-700 border border-red-100 rounded">
+              <p>{error}</p>
+              <button type="button" onClick={() => void loadIncidents()} className="mt-2 underline text-sm">
+                Try again
               </button>
-            </form>
-            {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
-            {message && <p className="text-sm text-good mt-4">{message}</p>}
-          </section>
+            </div>
+          )}
+
+          {loading && !error && (
+            <div className="bg-white/60 mt-8 px-5 py-8 text-sm text-slate border border-line rounded">
+              Loading incidents…
+            </div>
+          )}
+
+          {!loading && !error && incidents.length === 0 && (
+            <div className="bg-white/60 mt-8 px-5 py-8 border border-line rounded">
+              <p className="font-display text-lg font-semibold text-ink">No incidents reported</p>
+              <p className="text-sm text-slate mt-1">
+                Crew-reported incidents will appear here for verification.
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && incidents.length > 0 && (
+            <div className="blueprint-frame bg-white/70 mt-8 overflow-x-auto sm:overflow-visible">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-line text-slate">
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Trip</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Note</th>
+                    <th className="px-4 py-3">Reported</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidents.map((incident) => (
+                    <tr key={incident.id} className="border-b border-line bg-white/60">
+                      <td className="px-4 py-3 telemetry">{incident.id}</td>
+                      <td className="px-4 py-3 telemetry">#{incident.trip_id}</td>
+                      <td className="px-4 py-3 text-ink">{incident.type}</td>
+                      <td className="px-4 py-3">{incident.note}</td>
+                      <td className="px-4 py-3 text-slate/70 telemetry">
+                        {formatDate(incident.reported_at)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                            incident.admin_verified ? "bg-good/10 text-good" : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {incident.admin_verified ? "Verified" : "Unverified"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {!incident.admin_verified && (
+                          <button
+                            disabled={verifyingId === incident.id}
+                            onClick={() => void handleVerify(incident.id)}
+                            className="bg-rust text-white px-3 py-1.5 rounded text-xs hover:bg-rustDark disabled:opacity-60"
+                          >
+                            {verifyingId === incident.id ? "Verifying…" : "Verify"}
+                          </button>
+                        )}
+                        {incident.admin_verified && incident.verified_at && (
+                          <p className="text-xs text-slate/70 telemetry mt-1">
+                            Verified {formatDate(incident.verified_at)}
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <p className="text-xs text-slate/70 mt-5 max-w-xl">
             Verification uses the operator-scoped <span className="telemetry">POST /admin/incidents/&#123;id&#125;/verify</span> API.
