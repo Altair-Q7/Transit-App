@@ -77,6 +77,34 @@ export async function loginOperator(email: string, password: string) {
   return data;
 }
 
+export type SignupOperatorInput = {
+  name: string;
+  email: string;
+  password: string;
+  inviteCode?: string;
+};
+
+export type SignupOperatorResult = {
+  access_token: string;
+  token_type: string;
+  role: string;
+};
+
+export async function signupOperator(input: SignupOperatorInput): Promise<SignupOperatorResult> {
+  const data = await apiFetch<SignupOperatorResult>("/auth/operator/signup", {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      email: input.email,
+      password: input.password,
+      invite_code: input.inviteCode || undefined,
+    }),
+  });
+  if (!data.access_token) throw new Error("Signup response did not include an access token");
+  setToken(data.access_token);
+  return data;
+}
+
 export type Trip = {
   id: number;
   bus_id: number;

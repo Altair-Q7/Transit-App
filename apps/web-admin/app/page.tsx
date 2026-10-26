@@ -16,6 +16,12 @@ export default function Home() {
         >
           Sign in to your console
         </Link>
+        <Link
+          href="/signup"
+          className="inline-block mt-4 bg-rust text-paper px-6 py-2.5 rounded hover:bg-rustDark transition-colors"
+        >
+          Create an operator account
+        </Link>
       </div>
     </main>
   );

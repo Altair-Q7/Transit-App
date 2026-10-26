@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { loginOperator } from "@/lib/api";
 
 export default function LoginPage() {
@@ -63,6 +64,13 @@ export default function LoginPage() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
+
+      <p className="mt-6 text-sm text-slate text-center">
+        Don't have an account?{" "}
+        <Link href="/signup" className="text-rust hover:underline">
+          Create an operator account
+        </Link>
+      </p>
     </main>
   );
 }
