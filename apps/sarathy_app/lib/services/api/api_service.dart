@@ -5,9 +5,12 @@ import '../../models.dart';
 
 /// Base API service for communicating with the Sarathy Core Platform.
 class ApiService {
-  ApiService({String? baseUrl}) : _baseUrl = baseUrl;
+  ApiService({String? baseUrl, http.Client? client})
+      : _baseUrl = baseUrl,
+        _client = client ?? http.Client();
 
   final String? _baseUrl;
+  final http.Client _client;
 
   Future<String> get _resolvedBaseUrl async {
     if (_baseUrl != null) return _baseUrl;
@@ -31,7 +34,7 @@ class ApiService {
   Future<T> _get<T>(String path, String token, T Function(dynamic) parser) async {
     final url = await _resolvedBaseUrl;
     final headers = await _authHeaders(token);
-    final response = await http.get(Uri.parse('$url$path'), headers: headers);
+    final response = await _client.get(Uri.parse('$url$path'), headers: headers);
 
     if (response.statusCode != 200) {
       throw ApiException('Request failed: ${response.statusCode}', response.statusCode);
@@ -44,7 +47,7 @@ class ApiService {
       T Function(dynamic) parser) async {
     final url = await _resolvedBaseUrl;
     final headers = await _authHeaders(token);
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$url$path'),
       headers: headers,
       body: jsonEncode(body),
@@ -56,11 +59,26 @@ class ApiService {
     return parser(jsonDecode(response.body));
   }
 
+  /// Generic unauthenticated GET request (Content-Type only, no Authorization).
+  Future<T> _getPublic<T>(
+    String path,
+    T Function(dynamic) parser,
+  ) async {
+    final url = await _resolvedBaseUrl;
+    final headers = {'Content-Type': 'application/json'};
+    final response = await _client.get(Uri.parse('$url$path'), headers: headers);
+
+    if (response.statusCode != 200) {
+      throw ApiException('Request failed: ${response.statusCode}', response.statusCode);
+    }
+    return parser(jsonDecode(response.body));
+  }
+
   /// Generic POST request with form data (for login).
   Future<T> _postForm<T>(String path, Map<String, String> body,
       T Function(dynamic) parser) async {
     final url = await _resolvedBaseUrl;
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$url$path'),
       headers: _formHeaders,
       body: body,
@@ -74,39 +92,27 @@ class ApiService {
 
   // ==================== PASSENGER ENDPOINTS ====================
 
-  /// Get ETA estimates for a stop.
-  Future<List<EtaEstimate>> getEtaForStop(int stopId) async {
-    final url = await _resolvedBaseUrl;
-    final response = await http.get(Uri.parse('$url/eta/$stopId'));
+  /// Get ETA estimates for a stop (unauthenticated passenger endpoint).
+  Future<List<EtaEstimate>> getEtaForStop(int stopId) async => _getPublic<List<EtaEstimate>>(
+        '/eta/$stopId',
+        (json) => (json as List<dynamic>)
+            .map((e) => EtaEstimate.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 
-    if (response.statusCode != 200) {
-      throw ApiException('Failed to load ETA: ${response.statusCode}', response.statusCode);
-    }
-    final List<dynamic> data = jsonDecode(response.body);
-    return data.map((e) => EtaEstimate.fromJson(e as Map<String, dynamic>)).toList();
-  }
+  /// Search public bus stops for passengers (unauthenticated passenger endpoint).
+  Future<List<Stop>> searchStops(String query) async => _getPublic<List<Stop>>(
+        '/stops/search?q=${Uri.encodeQueryComponent(query)}',
+        (json) => (json as List<dynamic>)
+            .map((e) => Stop.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 
-  /// Search public bus stops for passengers.
-  Future<List<Stop>> searchStops(String query) async {
-    final url = await _resolvedBaseUrl;
-    final response = await http.get(Uri.parse('$url/stops/search?q=${Uri.encodeQueryComponent(query)}'));
-    if (response.statusCode != 200) {
-      throw ApiException('Failed to search stops: ${response.statusCode}', response.statusCode);
-    }
-    final data = jsonDecode(response.body) as List<dynamic>;
-    return data.map((e) => Stop.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  /// Get live position for a trip (passenger-facing).
-  Future<LivePosition> getLivePosition(int tripId) async {
-    final url = await _resolvedBaseUrl;
-    final response = await http.get(Uri.parse('$url/trips/$tripId/live'));
-
-    if (response.statusCode != 200) {
-      throw ApiException('No live data for this trip', response.statusCode);
-    }
-    return LivePosition.fromJson(jsonDecode(response.body));
-  }
+  /// Get live position for a trip (passenger-facing, unauthenticated endpoint).
+  Future<LivePosition> getLivePosition(int tripId) async => _getPublic<LivePosition>(
+        '/trips/$tripId/live',
+        (json) => LivePosition.fromJson(json as Map<String, dynamic>),
+      );
 
   // ==================== CREW ENDPOINTS ====================
 
@@ -173,7 +179,7 @@ class ApiService {
   /// Operator signup.
   Future<AuthTokens> operatorSignup(OperatorSignupData data) async {
     final url = await _resolvedBaseUrl;
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$url/auth/operator/signup'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data.toJson()),
