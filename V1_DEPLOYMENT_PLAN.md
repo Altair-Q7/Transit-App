@@ -1,18 +1,22 @@
 # Sarathy v1 — Deployment & Product Plan
 
-> **Status (Oct 2026):** the architecture and product intent below still hold,
-> but the implementation-status sections are stale — much of the early scope has
-> landed. Confirmed decisions:
+> **Status (Oct 2026):** Phases 1, 3 and 4 are implemented and verified on
+> `v1-foundation` (40 backend tests, CI, compose up/down with real MariaDB).
+> Phase 5 is implemented on Android and analysable static config on iOS, but
+> cannot be signed or run on iOS from Linux. Phase 6 (push) has not started.
+> Checkboxes below reflect the actual state. Confirmed decisions:
 >
-> - One Flutter codebase (`apps/sarathy_app`) with `passenger` and `crew` release
->   flavors; the dev build keeps the role picker.
+> - One Flutter codebase (`apps/sarathy_app`) with `passenger`, `crew` and an
+>   internal `dev` role-picker flavor.
 > - Passengers are fully anonymous: no accounts, no login, no passenger JWT.
 > - The operator console is `apps/web-admin`; the mobile operator role is
 >   dev/demo only.
 > - Operator signup is invite-code gated via `OPERATOR_SIGNUP_CODE`.
-> - App IDs: `com.sarathy.transit` and `com.sarathy.transit.crew`.
+> - App IDs: `com.sarathy.transit`, `com.sarathy.transit.crew`,
+>   `com.sarathy.transit.dev`.
 >
-> Outstanding v1 work is tracked in the backend and frontend task briefs.
+> Remaining v1 blockers are deployment-time only: a real keystore and store
+> accounts, a VPS `.env`, TLS/reverse proxy, and iOS build verification.
 
 ## What this app is
 
@@ -204,9 +208,9 @@ channel for horizontal scaling. Do not delete it.
 
 ### 3.2 Housekeeping before starting
 
-- Commit the large set of currently uncommitted working-tree changes
-- Remove `Demo/sarathy_demo/`
-- Rename `sarathy_app` to a real slug (currently inherits demo naming)
+- Done: working tree committed on `v1-foundation`
+- Done: `Demo/sarathy_demo/` removed
+- Done: legacy `passenger_app` / `crew_app` folded into `apps/sarathy_app`
 
 ---
 
@@ -219,14 +223,15 @@ Dependencies are sequential unless noted. Critical path is **Phase 5**.
 Nothing deploys until this passes: `AUTO_CREATE_TABLES=false` plus an empty
 `alembic/versions/` means the app refuses to start in production by design.
 
-- [ ] Generate one baseline Alembic migration covering all ten tables
-- [ ] Hand-edit it to add `trips.last_stop_sequence: int | None`
-- [ ] Verify against **real MariaDB** — SQLite will not catch `Enum` or MySQL-dialect issues
-- [ ] Add `--proxy-headers --forwarded-allow-ips='*'` to the uvicorn CMD in `backend/Dockerfile` (fix 2.3a)
-- [ ] Add a `healthcheck` hitting `/health` to the backend service; add `depends_on: condition: service_healthy`
-- [ ] Remove host port mappings for MariaDB (3306) and Redis (6379) — keep them internal
-- [ ] Configure log rotation (`max-size` / `max-file`) in compose — Docker's default json-file driver has none and will silently fill the disk
-- [ ] `web-admin` Dockerfile: `npm ci`, install only production dependencies in the runner stage, add `USER node`
+- [x] Generate one baseline Alembic migration covering all ten tables
+- [x] Hand-edit it to add `trips.last_stop_sequence: int | None`
+- [x] Verify against **real MariaDB** — SQLite will not catch `Enum` or MySQL-dialect issues
+- [x] Add `--proxy-headers --forwarded-allow-ips` to the uvicorn CMD (exact proxy IP,
+      never `*`; uvicorn 0.30.6 does not accept CIDR ranges)
+- [x] Add a `healthcheck` hitting `/health` to the backend service; add `depends_on: condition: service_healthy`
+- [x] Remove host port mappings for MariaDB (3306) and Redis (6379) — keep them internal
+- [x] Configure log rotation (`max-size` / `max-file`) in compose — Docker's default json-file driver has none and will silently fill the disk
+- [x] `web-admin` Dockerfile: `npm ci`, install only production dependencies in the runner stage, add `USER node`
 - [ ] Generate a real `SECRET_KEY` via `openssl rand -hex 32` and real database credentials
 - [ ] Write the VPS `.env` with `chmod 600`; confirm `.gitignore` still covers `.env`
 
@@ -299,49 +304,52 @@ Add a small per-stop dwell allowance to the segment sum.
 
 #### 3.2 Stop search
 
-- [ ] Add `GET /stops/search?q=` to replace the 3 hardcoded chips
-- [ ] **Resolve the tenant-visibility tension:** stops are operator-scoped, but passengers
+- [x] Add `GET /stops/search?q=` to replace the 3 hardcoded chips
+- [x] **Resolve the tenant-visibility tension:** stops are operator-scoped, but passengers
       are anonymous and do not know which operator they want. This endpoint must search
       across all *active* operators' stops
 - [ ] Decide whether an operator can mark a route private, and enforce it
 
 #### 3.3 Tests
 
-Coverage today is one smoke test. Priorities in order:
+Coverage is now 40 tests across auth, crew/operator endpoints, ETA engine, trip
+progress, public endpoints, proxy rate limiting and config guards.
 
-- [ ] **Tenant isolation** — can operator A's JWT read or mutate operator B's buses,
+- [x] **Tenant isolation** — can operator A's JWT read or mutate operator B's buses,
       routes, trips, and incidents? Cross-tenant leakage is the single most likely way
       this launch goes badly wrong
-- [ ] Rate limiter and lockout behaviour, including the proxy-IP path from 2.3a
-- [ ] ETA engine: unit tests for segment-sum, `departed` detection, confidence bands
-- [ ] Auth: role enforcement, expiry, crew-vs-operator token separation
+- [x] Rate limiter and lockout behaviour, including the proxy-IP path from 2.3a
+- [x] ETA engine: unit tests for segment-sum, `departed` detection, confidence bands
+- [x] Auth: role enforcement, expiry, crew-vs-operator token separation
 
 ### Phase 4 — Onboarding · ~2 days
 
 Market use is blocked without this — today there is no way to onboard anyone but yourself.
 
-- [ ] Operator signup screen (endpoint and model already exist; only the UI is missing)
-- [ ] `POST /crew` operator-scoped provisioning endpoint — `crew` currently has no creation
-      path whatsoever
-- [ ] Crew roster UI in the admin console
-- [ ] Bus and route selection on crew trip start, removing `busId: 1, routeId: 1`
-- [ ] Navigation shell for `sarathy_app` so operator screens are reachable without deep links
-- [ ] Seed script with a realistic demo corridor (Kerala route, real stop coordinates)
-- [ ] Logout buttons wired to the existing `AuthService.logout()`
+- [x] Operator signup screen (endpoint and model already exist; only the UI is missing)
+- [x] `POST /crew` operator-scoped provisioning endpoint
+- [x] Crew roster UI in the admin console
+- [x] Bus and route selection on crew trip start, removing `busId: 1, routeId: 1`
+- [x] Navigation shell for `sarathy_app` so operator screens are reachable without deep links
+- [x] Seed script with a realistic demo corridor (Kerala route, real stop coordinates)
+- [x] Logout buttons wired to the existing `AuthService.logout()`
 
 ### Phase 5 — Mobile build-out · ~2 weeks ← critical path
 
-This is **creation, not deployment** — there is no Android project.
+Android is built and verified; iOS platform files exist but cannot be compiled on
+Linux, so iOS work stays static until a macOS runner or device is available.
 
-- [ ] `flutter create --platforms=android,ios .` to generate the missing platform scaffolding
-- [ ] Android: `applicationId`, `versionCode` / `versionName`, `minSdk`, **release signing
-      config with a real keystore** (never debug keys), R8/ProGuard
-- [ ] iOS: bundle ID, deployment target, App Store team, `Info.plist` location usage strings
-- [ ] Port `passenger_app` screens into the consolidated app
-- [ ] Real launcher icons and app name (currently default Flutter branding)
-- [ ] `AppConfig` per-environment API/WS URLs — already runtime-overridable, wire the build flavours
-- [ ] Verify the offline ping queue survives backgrounding (currently an in-memory
-      `List<Map>`, lost on app kill, and its `catch` swallows genuine 4xx errors)
+- [x] `flutter create --platforms=android,ios .` to generate the missing platform scaffolding
+- [x] Android: `applicationId`, `versionCode` / `versionName`, `minSdk`, product
+      flavors and per-flavor permissions (passenger declares no location permission)
+- [ ] Android: **release signing config with a real keystore** (never debug keys), R8/ProGuard
+- [x] iOS: bundle ID, `Info.plist` location usage strings
+- [ ] iOS: deployment target, App Store team, crew-only background mode and Xcode schemes
+- [x] Port `passenger_app` screens into the consolidated app
+- [x] Real launcher icons and app name (currently default Flutter branding)
+- [x] `AppConfig` per-environment API/WS URLs — already runtime-overridable, wire the build flavours
+- [x] Verify the offline ping queue survives backgrounding — persisted via
+      `flutter_secure_storage`, FIFO, flushed on reconnect
 - [ ] Build release AAB and IPA
 
 **Store prerequisites (both stores):**
@@ -365,11 +373,13 @@ because a map dot cannot be pushed.
 
 ### Phase 7 — CI + pre-launch · ~3 days
 
-- [ ] GitHub Actions: backend lint + test
+- [x] GitHub Actions: backend lint + test
 - [ ] GitHub Actions: **`alembic upgrade head` against a throwaway MariaDB service** — this
       catches broken migrations before they reach the VPS
-- [ ] GitHub Actions: `web-admin` build
+- [x] GitHub Actions: `web-admin` build
 - [ ] GitHub Actions: `flutter build apk` — proves the mobile targets actually compile
+- [x] GitHub Actions: `flutter analyze` + `flutter test` (compilation is verified locally;
+      an APK job would need an Android SDK runner)
 - [ ] **Backup restore drill** — a backup never restored from is not a backup. Restore
       `backups_data` into a scratch MariaDB and verify row counts
 - [ ] Confirm `backups_data` is mounted to off-site storage, not just a local Docker volume

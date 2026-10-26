@@ -1,7 +1,16 @@
+# Cap container log growth. Docker's default json-file driver has no limit and
+# will eventually fill the host disk. Every service opts in via `logging`.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mariadb:
     image: mariadb:11
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
       MARIADB_DATABASE: ${MARIADB_DATABASE:-sarathy}
@@ -18,6 +27,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *default-logging
 
   # One-shot schema migration. Runs before the backend starts so Alembic is
   # the only schema path under compose (AUTO_CREATE_TABLES is forced off below).
@@ -25,6 +35,7 @@ services:
     image: sarathy-backend:local
     build: ./backend
     restart: "no"
+    logging: *default-logging
     env_file:
       - ./backend/.env
     environment:
@@ -38,6 +49,7 @@ services:
     image: sarathy-backend:local
     build: ./backend
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ./backend/.env
     environment:
@@ -82,6 +94,7 @@ services:
   backup:
     image: mariadb:11
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       mariadb:
         condition: service_healthy
@@ -99,6 +112,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
     restart: unless-stopped
+    logging: *default-logging
     # NEXT_PUBLIC_API_URL is inlined at image build time via the build arg
     # above, so no runtime environment entry is needed.
     ports:
