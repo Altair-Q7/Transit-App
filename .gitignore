@@ -51,3 +51,4 @@ build/
 *.log
 infra/backup/backups/
 **/ios/Runner/GeneratedPluginRegistrant.*
+*.tsbuildinfo
