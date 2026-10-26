@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
+import AuthGuard from "@/components/AuthGuard";
 
 type Stop = { id: number; name: string; sequence: number; latitude: number; longitude: number };
 type Route = { id: number; name: string; origin: string; destination: string; stops: Stop[] };
@@ -16,9 +17,10 @@ export default function RoutesPage() {
   }, []);
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <main className="flex-1 px-10 py-8">
+    <AuthGuard>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 px-10 py-8">
         <p className="font-display text-2xl font-semibold text-ink">Routes &amp; stops</p>
         <p className="text-slate text-sm mt-1">
           Each route&apos;s stops are what passengers search against for a live ETA.
@@ -47,7 +49,8 @@ export default function RoutesPage() {
             <p className="text-sm text-slate">No routes yet. Create one via the API (POST /routes).</p>
           )}
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthGuard>
   );
 }

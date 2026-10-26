@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
+import AuthGuard from "@/components/AuthGuard";
 
 type Bus = { id: number; registration_number: string; capacity: number; active: boolean };
 
@@ -34,9 +35,10 @@ export default function BusesPage() {
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <main className="flex-1 px-10 py-8">
+    <AuthGuard>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 px-10 py-8">
         <p className="font-display text-2xl font-semibold text-ink">Fleet</p>
         <p className="text-slate text-sm mt-1">Every bus registered under your operator account.</p>
 
@@ -79,7 +81,8 @@ export default function BusesPage() {
           ))}
           {buses.length === 0 && <p className="text-sm text-slate py-4">No buses yet — add your first one above.</p>}
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthGuard>
   );
 }

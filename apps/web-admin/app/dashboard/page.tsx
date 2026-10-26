@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import KpiTile from "@/components/KpiTile";
+import AuthGuard from "@/components/AuthGuard";
 import { apiFetch } from "@/lib/api";
 
 type Stats = {
@@ -22,9 +23,10 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <main className="flex-1 px-10 py-8">
+    <AuthGuard>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 px-10 py-8">
         <p className="font-display text-2xl font-semibold text-ink">Overview</p>
         <p className="text-slate text-sm mt-1">
           Live snapshot of your fleet — the same numbers behind the MVP success metrics.
@@ -46,7 +48,8 @@ export default function DashboardPage() {
             hint={stats ? `p95 < ${stats.system_health.p95_target_ms}ms` : undefined}
           />
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthGuard>
   );
 }
