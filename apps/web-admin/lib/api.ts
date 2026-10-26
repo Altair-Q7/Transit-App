@@ -144,3 +144,36 @@ export async function listIncidents(): Promise<Incident[]> {
       : (() => { throw new Error("The incident list response was not valid"); })();
   return incidents;
 }
+
+export type CrewRole = "driver" | "conductor";
+
+export type Crew = {
+  id: number;
+  name: string;
+  phone: string;
+  role: CrewRole;
+};
+
+export type CrewInput = {
+  name: string;
+  phone: string;
+  password: string;
+  role: CrewRole;
+};
+
+export async function listCrew(): Promise<Crew[]> {
+  const response = await apiFetch<Crew[] | { crew?: Crew[] }>("/operator/crew");
+  const members = Array.isArray(response)
+    ? response
+    : Array.isArray(response.crew)
+      ? response.crew
+      : (() => { throw new Error("The crew list response was not valid"); })();
+  return members;
+}
+
+export async function createCrew(input: CrewInput): Promise<Crew> {
+  return apiFetch<Crew>("/operator/crew", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}

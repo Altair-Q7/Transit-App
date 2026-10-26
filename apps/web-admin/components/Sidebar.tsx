@@ -9,6 +9,7 @@ const links = [
   { href: "/dashboard", label: "Overview" },
   { href: "/buses", label: "Fleet" },
   { href: "/routes", label: "Routes & Stops" },
+  { href: "/crew", label: "Crew" },
   { href: "/trips", label: "Live Trips" },
   { href: "/incidents", label: "Incidents" },
 ];
