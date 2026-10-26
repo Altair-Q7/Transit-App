@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import admin, auth, eta, fleet, operator, stops, trips, ws
+from app.api.v1.endpoints import admin, auth, crew, eta, fleet, operator, stops, trips, ws
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -11,3 +11,4 @@ api_router.include_router(stops.router)
 api_router.include_router(admin.router)
 api_router.include_router(ws.router)
 api_router.include_router(operator.router)
+api_router.include_router(crew.router)

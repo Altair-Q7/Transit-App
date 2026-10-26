@@ -45,6 +45,9 @@ Source of truth for client teams. Derived from the routers registered in
 | GET | `/operator/crew` | operator | — | `list[CrewOut]` | 200 | 401 |
 | GET | `/operator/trips` | operator | — | `list[OperatorTripOut]` | 200 | 401 |
 | GET | `/operator/incidents` | operator | — | `list[IncidentOut]` | 200 | 401 |
+| GET | `/crew/me` | crew | — | `CrewMeOut` | 200 | 401 |
+| GET | `/crew/buses` | crew | — | `list[BusOut]` | 200 | 401 |
+| GET | `/crew/routes` | crew | — | `list[RouteOut]` | 200 | 401 |
 | POST | `/admin/incidents/{incident_id}/verify` | operator | — | `{id, status: "verified", notify_passengers: true}` | 200 | 401, 403, 404 |
 | GET | `/admin/stats` | operator | — | stats object | 200 | 401 |
 | WS | `/ws/trip/{trip_id}` | none | — | server push object | — | socket close |
@@ -164,6 +167,26 @@ Values are Redis hash entries and are returned as strings; `speed_kmh` is `""`
 when the crew omitted it. `404 {"detail": "No live data for this trip yet"}`
 when the trip has never pinged or the cache expired.
 
+## Crew fleet view
+
+Crew routes require a crew JWT. Every query is scoped by the JWT's
+`operator_id`; a token whose crew id belongs to a different operator is
+rejected with `401`.
+
+### GET `/api/v1/crew/me`
+Crew. `200` → `CrewMeOut` for the authenticated crew member:
+
+```json
+{"id": 3, "name": "Driver One", "phone": "+919999999999", "role": "driver", "operator_id": 1}
+```
+
+### GET `/api/v1/crew/buses`
+Crew. `200` → `list[BusOut]` for the crew member's operator only.
+
+### GET `/api/v1/crew/routes`
+Crew. `200` → `list[RouteOut]` for the crew member's operator only, including
+each route's ordered stops.
+
 ## Passenger public surface
 
 ### GET `/api/v1/eta/{stop_id}`
@@ -246,6 +269,7 @@ OperatorSignup  {name: str, email: str(email), password: str}
 Token           {access_token: str, token_type: "bearer", role: str}
 CrewProvision   {name: str, phone: str, password: str, role: "driver"|"conductor" = "driver"}
 CrewOut         {id: int, name: str, phone: str, role: str}
+CrewMeOut       {id: int, name: str, phone: str, role: str, operator_id: int}
 BusCreate       {registration_number: str, capacity: int = 45}
 BusOut          {id: int, registration_number: str, capacity: int, active: bool}
 StopCreate      {name: str, sequence: int, latitude: float, longitude: float}

@@ -39,6 +39,10 @@ class CrewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CrewMeOut(CrewOut):
+    operator_id: int
+
+
 # ---------- Fleet ----------
 
 class BusCreate(BaseModel):
